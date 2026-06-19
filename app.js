@@ -48,8 +48,8 @@ function saveTrades(t) {
    ============================================================ */
 
 const THEME_META = {
-  dark:         { color: "#0d1117" },
-  light:        { color: "#f6f8fa" },
+  dark:          { color: "#0d1117" },
+  light:         { color: "#f6f8fa" },
   "glass-dark":  { color: "#060b14" },
   "glass-light": { color: "#dde8f5" },
 };
@@ -72,9 +72,10 @@ function applyTheme(theme) {
   });
 }
 
+const VALID_COMBOS = ["blue", "violet", "teal", "white", "black"];
+
 function applyCombo(combo) {
-  const valid = ["blue", "violet", "teal"];
-  if (!valid.includes(combo)) combo = "blue";
+  if (!VALID_COMBOS.includes(combo)) combo = "blue";
   const html = document.documentElement;
   if (combo === "blue") {
     delete html.dataset.combo;
@@ -91,6 +92,7 @@ function applyCombo(combo) {
 function setTheme(theme) {
   const s = loadSettings(); s.theme = theme; saveSettings(s);
   applyTheme(theme);
+  renderEquityCurve();
   showToast("Theme applied");
 }
 
@@ -106,7 +108,12 @@ function setCombo(combo) {
 
 function addTrade(amountUSD, note) {
   const trades = loadTrades();
-  trades.push({ id: uid(), amountUSD: parseFloat(amountUSD), note: (note||"").trim(), timestamp: Date.now() });
+  trades.push({
+    id: uid(),
+    amountUSD: parseFloat(amountUSD),
+    note: (note || "").trim(),
+    timestamp: Date.now(),
+  });
   saveTrades(trades);
 }
 
@@ -150,6 +157,89 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ============================================================
+   Equity Curve
+   ============================================================ */
+
+function renderEquityCurve() {
+  const trades = loadTrades().slice().sort((a, b) => a.timestamp - b.timestamp);
+  const svg    = document.getElementById("equity-svg");
+  const statEl = document.getElementById("equity-stat");
+
+  svg.innerHTML = "";
+  svg.classList.remove("has-data");
+  statEl.textContent = "";
+  statEl.style.color = "";
+
+  if (trades.length === 0) return;
+
+  // Build cumulative equity series (starts at 0)
+  const equity = [0];
+  for (const t of trades) equity.push(equity[equity.length - 1] + t.amountUSD);
+
+  const W = 300, H = 72;
+  const P = { t: 6, r: 6, b: 6, l: 6 };
+  const pw = W - P.l - P.r;
+  const ph = H - P.t - P.b;
+
+  const minV = Math.min(...equity);
+  const maxV = Math.max(...equity);
+  const range = maxV - minV || 1;
+
+  const toX = i => P.l + (i / (equity.length - 1)) * pw;
+  const toY = v => P.t + ph - ((v - minV) / range) * ph;
+
+  const lastVal  = equity[equity.length - 1];
+  const isPos    = lastVal >= 0;
+
+  const lineCol  = cssVar(isPos ? "--equity-line"     : "--equity-line-neg");
+  const fillCol  = cssVar(isPos ? "--equity-fill"     : "--equity-fill-neg");
+  const greenCol = cssVar("--green");
+  const redCol   = cssVar("--red");
+
+  // Zero baseline Y (clamped inside plot area)
+  const rawZeroY = toY(0);
+  const zeroY    = Math.max(P.t, Math.min(P.t + ph, rawZeroY));
+
+  // Coordinate arrays
+  const pts = equity.map((v, i) => ({ x: toX(i), y: toY(v) }));
+  const polyPts = pts.map(p => `${p.x},${p.y}`).join(" ");
+
+  // Area fill: drop from first point to zero, trace line, return to zero
+  const areaD = [
+    `M ${pts[0].x},${zeroY}`,
+    ...pts.map(p => `L ${p.x},${p.y}`),
+    `L ${pts[pts.length - 1].x},${zeroY}`,
+    "Z",
+  ].join(" ");
+
+  const last = pts[pts.length - 1];
+
+  svg.innerHTML = `
+    <defs>
+      <clipPath id="ecclip">
+        <rect x="${P.l}" y="${P.t}" width="${pw}" height="${ph}" />
+      </clipPath>
+    </defs>
+    <line x1="${P.l}" y1="${zeroY}" x2="${W - P.r}" y2="${zeroY}"
+          stroke="currentColor" stroke-width="0.5" stroke-dasharray="3 3" opacity="0.18" />
+    <path d="${areaD}" fill="${fillCol}" clip-path="url(#ecclip)" />
+    <polyline points="${polyPts}" fill="none" stroke="${lineCol}"
+              stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"
+              clip-path="url(#ecclip)" />
+    <circle cx="${last.x}" cy="${last.y}" r="3" fill="${lineCol}" />
+  `;
+
+  svg.classList.add("has-data");
+
+  statEl.textContent = usdFmt.format(lastVal);
+  statEl.style.color = isPos ? greenCol : redCol;
+}
+
 /* ============================================================
    Rendering
    ============================================================ */
@@ -162,9 +252,8 @@ function renderTicker() {
 function renderBalance() {
   const balUSD = getBalanceUSD();
   const balMZN = convertToMZN(balUSD);
-  const trades  = loadTrades();
+  const trades = loadTrades();
 
-  // Big dual display
   const usdEl = document.getElementById("balance-usd");
   usdEl.textContent = usdFmt.format(balUSD);
   usdEl.className = "balance__usd " + signClass(balUSD);
@@ -175,7 +264,6 @@ function renderBalance() {
   document.getElementById("trade-count").textContent =
     trades.length === 1 ? "1 trade" : `${trades.length} trades`;
 
-  // Last 2 trades mini section
   renderRecentTrades(trades);
 }
 
@@ -183,12 +271,12 @@ function renderRecentTrades(trades) {
   const container = document.getElementById("recent-trades");
   container.innerHTML = "";
 
-  const last2 = trades.slice(-2).reverse(); // most recent first
+  const last2 = trades.slice(-2).reverse();
   if (last2.length === 0) return;
 
   for (const t of last2) {
     const mzn = convertToMZN(t.amountUSD);
-    const el = document.createElement("div");
+    const el  = document.createElement("div");
     el.className = "recent-trade";
     el.innerHTML = `
       <div class="recent-trade__label">
@@ -205,7 +293,7 @@ function renderRecentTrades(trades) {
 }
 
 function renderHistory() {
-  const trades = loadTrades().slice().reverse();
+  const trades    = loadTrades().slice().reverse();
   const container = document.getElementById("history");
   container.innerHTML = "";
 
@@ -250,6 +338,7 @@ function renderAll() {
   renderTicker();
   renderBalance();
   renderHistory();
+  renderEquityCurve();
 }
 
 /* ============================================================
@@ -257,7 +346,6 @@ function renderAll() {
    ============================================================ */
 
 const addCard       = document.getElementById("add-card");
-const addBody       = document.getElementById("add-body");
 const addToggle     = document.getElementById("add-toggle");
 const addCompactBtn = document.getElementById("add-compact-btn");
 
@@ -265,7 +353,6 @@ function setAddCollapsed(collapsed, save = true) {
   addCard.classList.toggle("is-collapsed", collapsed);
   addToggle.setAttribute("aria-expanded", String(!collapsed));
   addCompactBtn.hidden = !collapsed;
-
   if (save) {
     const s = loadSettings();
     s.addCollapsed = collapsed;
@@ -342,7 +429,6 @@ document.getElementById("reset-all").addEventListener("click", () => {
   showToast("All data reset");
 });
 
-// Theme & combo buttons
 document.querySelectorAll(".theme-btn").forEach(btn =>
   btn.addEventListener("click", () => setTheme(btn.dataset.theme))
 );
@@ -360,14 +446,6 @@ function applyView(view) {
   document.querySelectorAll(".view").forEach(el =>
     el.classList.toggle("view--active", el.dataset.view === view)
   );
-
-  const subheader = document.getElementById("subheader");
-  const isBalance = view === "balance";
-  subheader.hidden = isBalance;
-
-  document.getElementById("backbar-history").hidden = view !== "history";
-  document.getElementById("backbar-settings").hidden = view !== "settings";
-
   window.scrollTo(0, 0);
 }
 
@@ -390,7 +468,8 @@ function currentViewFromHash() {
 
 window.addEventListener("hashchange", () => applyView(currentViewFromHash()));
 
-document.querySelectorAll(".navtile, .backbtn").forEach(btn =>
+// Nav: tiles + bottom back buttons
+document.querySelectorAll(".navtile, .view-nav__back").forEach(btn =>
   btn.addEventListener("click", () => showView(btn.dataset.goto))
 );
 
@@ -400,7 +479,7 @@ document.getElementById("ticker-rate").addEventListener("click", () => {
 });
 
 /* ============================================================
-   PWA install
+   PWA install prompt
    ============================================================ */
 
 let deferredInstallEvent = null;
@@ -415,24 +494,40 @@ window.addEventListener("beforeinstallprompt", e => {
 installBtn.addEventListener("click", async () => {
   if (!deferredInstallEvent) return;
   deferredInstallEvent.prompt();
-  await deferredInstallEvent.userChoice;
+  const { outcome } = await deferredInstallEvent.userChoice;
   deferredInstallEvent = null;
-  installBtn.hidden = true;
+  if (outcome === "accepted") installBtn.hidden = true;
 });
 
 window.addEventListener("appinstalled", () => {
   installBtn.hidden = true;
-  showToast("App installed");
+  deferredInstallEvent = null;
+  showToast("App installed!");
 });
 
 /* ============================================================
-   Service worker
+   Service Worker registration
    ============================================================ */
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () =>
-    navigator.serviceWorker.register("service-worker.js").catch(() => {})
-  );
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("./service-worker.js", {
+        scope: "./",
+      });
+      // When a new SW is waiting, reload to activate it immediately
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            showToast("App updated — refresh to apply");
+          }
+        });
+      });
+    } catch (err) {
+      console.warn("SW registration failed:", err);
+    }
+  });
 }
 
 /* ============================================================
@@ -441,8 +536,8 @@ if ("serviceWorker" in navigator) {
 
 const _s = loadSettings();
 document.getElementById("rate-input").value = _s.usdToMznRate;
-applyTheme(_s.theme  || "dark");
-applyCombo(_s.combo  || "blue");
+applyTheme(_s.theme       || "dark");
+applyCombo(_s.combo       || "blue");
 setAddCollapsed(_s.addCollapsed ?? false, false);
 renderAll();
 showView(currentViewFromHash(), { replace: true });

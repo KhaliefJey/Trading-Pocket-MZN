@@ -31,33 +31,24 @@
     </button>
   </header>
 
-  <!-- SUB-HEADER: back bars only (no navtiles here) -->
-  <div class="subheader" id="subheader" hidden>
-
-    <div class="backbar" id="backbar-history" data-for="history" hidden>
-      <button class="backbtn" data-goto="balance" type="button" aria-label="Back">
-        <span class="icon icon-back" aria-hidden="true"></span>
-      </button>
-      <h1 class="backbar__title"><span class="icon icon-history" aria-hidden="true"></span>History</h1>
-      <button class="btn btn--ghost btn--small" id="clear-history" type="button">Clear</button>
-    </div>
-
-    <div class="backbar" id="backbar-settings" data-for="settings" hidden>
-      <button class="backbtn" data-goto="balance" type="button" aria-label="Back">
-        <span class="icon icon-back" aria-hidden="true"></span>
-      </button>
-      <h1 class="backbar__title"><span class="icon icon-gear" aria-hidden="true"></span>Settings</h1>
-      <span class="backbar__spacer"></span>
-    </div>
-
-  </div>
-
   <main id="main">
 
     <!-- VIEW: BALANCE -->
     <section class="view view--active" data-view="balance">
 
-      <!-- Balance card with last 2 trades -->
+      <!-- Equity curve card -->
+      <div class="card card--equity" aria-label="Equity curve">
+        <div class="equity-header">
+          <span class="equity-label">Equity Curve</span>
+          <span class="equity-stat" id="equity-stat"></span>
+        </div>
+        <div class="equity-wrap">
+          <svg id="equity-svg" class="equity-svg" viewBox="0 0 300 72" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div class="equity-empty" id="equity-empty">Add trades to see your curve</div>
+        </div>
+      </div>
+
+      <!-- Balance card -->
       <div class="card card--balance" aria-labelledby="balance-heading">
         <h2 id="balance-heading"><span class="icon icon-wallet" aria-hidden="true"></span>Balance</h2>
         <div class="balance__dual" id="balance-dual">
@@ -91,7 +82,9 @@
               <span class="field__label">Note <em>(optional)</em></span>
               <input type="text" id="trade-note" placeholder="Setup, session, pair..." maxlength="80" />
             </label>
-            <button type="submit" class="btn btn--primary">Add Trade</button>
+            <button type="submit" class="btn btn--confirm">
+              <span class="icon icon-check" aria-hidden="true"></span>Confirm
+            </button>
           </form>
         </div>
 
@@ -101,7 +94,7 @@
         </button>
       </div>
 
-      <!-- Navigation tiles — now below Add Trade -->
+      <!-- Navigation tiles -->
       <div class="navtiles" id="navtiles">
         <button class="navtile" data-goto="history" type="button">
           <span class="icon icon-history navtile__icon" aria-hidden="true"></span>
@@ -123,6 +116,13 @@
     <section class="view" data-view="history">
       <div class="card">
         <div id="history" class="history"></div>
+      </div>
+      <!-- Back bar at bottom -->
+      <div class="view-nav">
+        <button class="view-nav__back" data-goto="balance" type="button">
+          <span class="icon icon-back" aria-hidden="true"></span>Balance
+        </button>
+        <button class="btn btn--ghost btn--small" id="clear-history" type="button">Clear all</button>
       </div>
     </section>
 
@@ -167,6 +167,14 @@
             <span class="combo-swatch" style="background:#34d399"></span>
             Teal
           </button>
+          <button class="combo-btn" data-combo="white" type="button" aria-pressed="false">
+            <span class="combo-swatch combo-swatch--bordered" style="background:#ffffff"></span>
+            White
+          </button>
+          <button class="combo-btn" data-combo="black" type="button" aria-pressed="false">
+            <span class="combo-swatch combo-swatch--bordered" style="background:#111111"></span>
+            Black
+          </button>
         </div>
       </div>
 
@@ -182,6 +190,14 @@
         <button class="btn btn--install" id="install-btn" type="button" hidden>
           <span class="icon icon-download" aria-hidden="true"></span>Install App
         </button>
+      </div>
+
+      <!-- Back bar at bottom -->
+      <div class="view-nav">
+        <button class="view-nav__back" data-goto="balance" type="button">
+          <span class="icon icon-back" aria-hidden="true"></span>Balance
+        </button>
+        <span></span>
       </div>
 
     </section>

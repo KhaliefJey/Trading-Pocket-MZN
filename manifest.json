@@ -1,26 +1,52 @@
 {
+  "id": "/trading-pocket-dashboard/",
   "name": "Trading Pocket Dashboard",
-  "short_name": "KJTPmzn",
-  "description": "Mobile trading journal with live USD to MZN conversion.",
+  "short_name": "Trading Pocket",
+  "description": "Mobile trading journal with live USD to MZN conversion. Track P&L, view equity curve, manage your trading history.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["finance", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "lang": "pt"
+  "screenshots": [
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Trading Pocket Dashboard home screen"
+    }
+  ]
 }
