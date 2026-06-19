@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="theme-color" content="#0d1117" />
+<meta name="description" content="Mobile trading journal with live USD to MZN conversion." />
+
+<title>Trading Pocket Dashboard</title>
+
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TICKER HEADER -->
+  <header class="ticker" id="ticker">
+    <div class="ticker__brand">
+      <svg class="ticker__logo" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="11" width="3" height="8" rx="1" fill="#f85149"/>
+        <rect x="9" y="6" width="3" height="13" rx="1" fill="#3fb950"/>
+        <rect x="15" y="3" width="3" height="16" rx="1" fill="#3fb950"/>
+        <rect x="21" y="8" width="0" height="0"/>
+      </svg>
+      <span>Trading Pocket</span>
+    </div>
+    <button class="ticker__rate" id="ticker-rate" title="Tap to edit rate in Settings">
+      <span class="ticker__pair">USD/MZN</span>
+      <span class="ticker__value" id="ticker-rate-value">63.00</span>
+    </button>
+  </header>
+
+  <main>
+
+    <!-- BALANCE -->
+    <section class="card card--balance" aria-labelledby="balance-heading">
+      <h2 id="balance-heading"><span class="icon icon-wallet" aria-hidden="true"></span>Balance</h2>
+
+      <div class="balance">
+        <div class="balance__usd" id="balance-usd">$0.00</div>
+        <div class="balance__mzn"><span id="balance-mzn">0.00</span> MZN</div>
+      </div>
+
+      <div class="balance__meta">
+        <span id="trade-count">0 trades</span>
+      </div>
+    </section>
+
+    <!-- ADD TRADE -->
+    <section class="card" aria-labelledby="add-heading">
+      <h2 id="add-heading"><span class="icon icon-plus" aria-hidden="true"></span>Add Trade</h2>
+
+      <form id="trade-form" class="form" autocomplete="off">
+        <label class="field">
+          <span class="field__label">Profit / Loss (USD)</span>
+          <input
+            type="number"
+            id="trade-amount"
+            inputmode="decimal"
+            step="0.01"
+            placeholder="e.g. 42.50 or -18.30"
+            required
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Note <em>(optional)</em></span>
+          <input type="text" id="trade-note" placeholder="Setup, session, pair..." maxlength="80" />
+        </label>
+
+        <button type="submit" class="btn btn--primary">Add Trade</button>
+      </form>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="card" aria-labelledby="history-heading">
+      <div class="card__header-row">
+        <h2 id="history-heading"><span class="icon icon-history" aria-hidden="true"></span>History</h2>
+        <button class="btn btn--ghost btn--small" id="clear-history" type="button">Clear</button>
+      </div>
+      <div id="history" class="history"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="card" aria-labelledby="settings-heading">
+      <h2 id="settings-heading"><span class="icon icon-gear" aria-hidden="true"></span>Settings</h2>
+
+      <form id="rate-form" class="form">
+        <label class="field">
+          <span class="field__label">USD &rarr; MZN rate</span>
+          <input type="number" id="rate-input" inputmode="decimal" step="0.01" min="0.01" required />
+        </label>
+        <button type="submit" class="btn btn--secondary">Save Rate</button>
+      </form>
+
+      <button class="btn btn--danger" id="reset-all" type="button">Reset All Data</button>
+
+      <button class="btn btn--install" id="install-btn" type="button" hidden>
+        <span class="icon icon-download" aria-hidden="true"></span>Install App
+      </button>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <span>Stored only on this device</span>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
