@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<meta name="theme-color" content="#0d1117" />
+<meta name="theme-color" content="#0d1117" id="meta-theme-color" />
 <meta name="description" content="Mobile trading journal with live USD to MZN conversion." />
 
 <title>Trading Pocket Dashboard</title>
@@ -33,7 +33,7 @@
     </button>
   </header>
 
-  <!-- SUB-HEADER: nav tiles on Balance, back-bar on History/Settings -->
+  <!-- SUB-HEADER -->
   <div class="subheader" id="subheader">
 
     <div class="navtiles" id="navtiles" data-for="balance">
@@ -123,6 +123,36 @@
 
     <!-- VIEW: SETTINGS -->
     <section class="view" data-view="settings">
+
+      <!-- Theme picker -->
+      <div class="card">
+        <h2>Appearance</h2>
+        <div class="theme-switcher" role="group" aria-label="Choose theme">
+
+          <button class="theme-btn" data-theme="dark" type="button" aria-pressed="true">
+            <div class="theme-btn__preview preview--dark" aria-hidden="true"></div>
+            Dark
+          </button>
+
+          <button class="theme-btn" data-theme="light" type="button" aria-pressed="false">
+            <div class="theme-btn__preview preview--light" aria-hidden="true"></div>
+            Light
+          </button>
+
+          <button class="theme-btn" data-theme="glass-dark" type="button" aria-pressed="false">
+            <div class="theme-btn__preview preview--glass-dark" aria-hidden="true"></div>
+            Glass Dark
+          </button>
+
+          <button class="theme-btn" data-theme="glass-light" type="button" aria-pressed="false">
+            <div class="theme-btn__preview preview--glass-light" aria-hidden="true"></div>
+            Glass Light
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Rate -->
       <div class="card">
         <form id="rate-form" class="form">
           <label class="field">
@@ -138,6 +168,7 @@
           <span class="icon icon-download" aria-hidden="true"></span>Install App
         </button>
       </div>
+
     </section>
 
   </main>

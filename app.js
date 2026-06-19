@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
 
 const DEFAULT_SETTINGS = {
   usdToMznRate: 63,
+  theme: "dark",
 };
 
 function uid() {
@@ -45,6 +46,44 @@ function loadTrades() {
 
 function saveTrades(trades) {
   localStorage.setItem(STORAGE_KEYS.trades, JSON.stringify(trades));
+}
+
+/* ============================================================
+   Theme
+   ============================================================ */
+
+const THEME_META = {
+  dark:        { color: "#0d1117" },
+  light:       { color: "#f6f8fa" },
+  "glass-dark":  { color: "#060b14" },
+  "glass-light": { color: "#dde8f5" },
+};
+
+function applyTheme(theme) {
+  const validThemes = Object.keys(THEME_META);
+  if (!validThemes.includes(theme)) theme = "dark";
+
+  document.documentElement.dataset.theme = theme === "dark" ? "" : theme;
+  if (theme === "dark") {
+    delete document.documentElement.dataset.theme;
+  }
+
+  const metaColor = document.getElementById("meta-theme-color");
+  if (metaColor) metaColor.content = THEME_META[theme].color;
+
+  document.querySelectorAll(".theme-btn").forEach((btn) => {
+    const active = btn.dataset.theme === theme;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function setTheme(theme) {
+  const settings = loadSettings();
+  settings.theme = theme;
+  saveSettings(settings);
+  applyTheme(theme);
+  showToast("Theme applied");
 }
 
 /* ============================================================
@@ -246,11 +285,17 @@ document.getElementById("reset-all").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEYS.settings);
   renderAll();
   document.getElementById("rate-input").value = loadSettings().usdToMznRate;
+  applyTheme("dark");
   showToast("All data reset");
 });
 
+/* Theme buttons */
+document.querySelectorAll(".theme-btn").forEach((btn) => {
+  btn.addEventListener("click", () => setTheme(btn.dataset.theme));
+});
+
 /* ============================================================
-   View routing (Balance / History / Settings as separate pages)
+   View routing
    ============================================================ */
 
 const VALID_VIEWS = ["balance", "history", "settings"];
@@ -277,7 +322,7 @@ function showView(view, { replace = false } = {}) {
     return;
   }
   if (location.hash !== hash) {
-    location.hash = hash; // triggers hashchange -> applyView
+    location.hash = hash;
   } else {
     applyView(view);
   }
@@ -331,9 +376,7 @@ window.addEventListener("appinstalled", () => {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(() => {
-      /* offline-first features simply won't be available */
-    });
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
   });
 }
 
@@ -341,6 +384,8 @@ if ("serviceWorker" in navigator) {
    Init
    ============================================================ */
 
-document.getElementById("rate-input").value = loadSettings().usdToMznRate;
+const _initSettings = loadSettings();
+document.getElementById("rate-input").value = _initSettings.usdToMznRate;
+applyTheme(_initSettings.theme || "dark");
 renderAll();
 showView(currentViewFromHash(), { replace: true });
