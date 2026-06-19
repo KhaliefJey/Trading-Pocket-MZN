@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <meta name="theme-color" content="#0d1117" id="meta-theme-color" />
 <meta name="description" content="Mobile trading journal with live USD to MZN conversion." />
-
 <title>Trading Pocket Dashboard</title>
-
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -17,7 +15,7 @@
 
 <div class="app">
 
-  <!-- TICKER HEADER (always visible) -->
+  <!-- TICKER HEADER -->
   <header class="ticker" id="ticker">
     <div class="ticker__brand">
       <svg class="ticker__logo" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -33,19 +31,8 @@
     </button>
   </header>
 
-  <!-- SUB-HEADER -->
-  <div class="subheader" id="subheader">
-
-    <div class="navtiles" id="navtiles" data-for="balance">
-      <button class="navtile" data-goto="history" type="button">
-        <span class="icon icon-history navtile__icon" aria-hidden="true"></span>
-        <span>History</span>
-      </button>
-      <button class="navtile" data-goto="settings" type="button">
-        <span class="icon icon-gear navtile__icon" aria-hidden="true"></span>
-        <span>Settings</span>
-      </button>
-    </div>
+  <!-- SUB-HEADER: back bars only (no navtiles here) -->
+  <div class="subheader" id="subheader" hidden>
 
     <div class="backbar" id="backbar-history" data-for="history" hidden>
       <button class="backbtn" data-goto="balance" type="button" aria-label="Back">
@@ -67,45 +54,63 @@
 
   <main id="main">
 
-    <!-- VIEW: BALANCE (home) -->
+    <!-- VIEW: BALANCE -->
     <section class="view view--active" data-view="balance">
 
+      <!-- Balance card with last 2 trades -->
       <div class="card card--balance" aria-labelledby="balance-heading">
         <h2 id="balance-heading"><span class="icon icon-wallet" aria-hidden="true"></span>Balance</h2>
-
-        <div class="balance">
-          <div class="balance__usd" id="balance-usd">$0.00</div>
-          <div class="balance__mzn"><span id="balance-mzn">0.00</span> MZN</div>
+        <div class="balance__dual" id="balance-dual">
+          <span class="balance__usd" id="balance-usd">+$0.00</span>
+          <span class="balance__mzn mzn-value" id="balance-mzn">0.00 MZN</span>
         </div>
-
         <div class="balance__meta">
           <span id="trade-count">0 trades</span>
         </div>
+        <div class="recent-trades" id="recent-trades"></div>
       </div>
 
-      <div class="card" aria-labelledby="add-heading">
-        <h2 id="add-heading"><span class="icon icon-plus" aria-hidden="true"></span>Add Trade</h2>
+      <!-- Add Trade card — collapsible -->
+      <div class="card card--add" id="add-card" aria-labelledby="add-heading">
+        <div class="card__header-row">
+          <h2 id="add-heading"><span class="icon icon-plus" aria-hidden="true"></span>Add Trade</h2>
+          <button class="add-toggle" id="add-toggle" type="button" aria-label="Toggle form" aria-expanded="true">
+            <span class="icon icon-chevron" aria-hidden="true"></span>
+          </button>
+        </div>
 
-        <form id="trade-form" class="form" autocomplete="off">
-          <label class="field">
-            <span class="field__label">Profit / Loss (USD)</span>
-            <input
-              type="number"
-              id="trade-amount"
-              inputmode="decimal"
-              step="0.01"
-              placeholder="e.g. 42.50 or -18.30"
-              required
-            />
-          </label>
+        <!-- Expanded form -->
+        <div class="add-body" id="add-body">
+          <form id="trade-form" class="form" autocomplete="off">
+            <label class="field">
+              <span class="field__label">Profit / Loss (USD)</span>
+              <input type="number" id="trade-amount" inputmode="decimal" step="0.01"
+                     placeholder="e.g. 42.50 or -18.30" required />
+            </label>
+            <label class="field">
+              <span class="field__label">Note <em>(optional)</em></span>
+              <input type="text" id="trade-note" placeholder="Setup, session, pair..." maxlength="80" />
+            </label>
+            <button type="submit" class="btn btn--primary">Add Trade</button>
+          </form>
+        </div>
 
-          <label class="field">
-            <span class="field__label">Note <em>(optional)</em></span>
-            <input type="text" id="trade-note" placeholder="Setup, session, pair..." maxlength="80" />
-          </label>
+        <!-- Compact state -->
+        <button class="btn btn--primary add-compact-btn" id="add-compact-btn" type="button" hidden>
+          <span class="icon icon-plus" aria-hidden="true"></span>Add Trade
+        </button>
+      </div>
 
-          <button type="submit" class="btn btn--primary">Add Trade</button>
-        </form>
+      <!-- Navigation tiles — now below Add Trade -->
+      <div class="navtiles" id="navtiles">
+        <button class="navtile" data-goto="history" type="button">
+          <span class="icon icon-history navtile__icon" aria-hidden="true"></span>
+          <span>History</span>
+        </button>
+        <button class="navtile" data-goto="settings" type="button">
+          <span class="icon icon-gear navtile__icon" aria-hidden="true"></span>
+          <span>Settings</span>
+        </button>
       </div>
 
       <footer class="footer">
@@ -124,35 +129,47 @@
     <!-- VIEW: SETTINGS -->
     <section class="view" data-view="settings">
 
-      <!-- Theme picker -->
       <div class="card">
         <h2>Appearance</h2>
-        <div class="theme-switcher" role="group" aria-label="Choose theme">
 
+        <!-- Theme grid -->
+        <div class="theme-switcher" role="group" aria-label="Choose theme">
           <button class="theme-btn" data-theme="dark" type="button" aria-pressed="true">
             <div class="theme-btn__preview preview--dark" aria-hidden="true"></div>
             Dark
           </button>
-
           <button class="theme-btn" data-theme="light" type="button" aria-pressed="false">
             <div class="theme-btn__preview preview--light" aria-hidden="true"></div>
             Light
           </button>
-
           <button class="theme-btn" data-theme="glass-dark" type="button" aria-pressed="false">
             <div class="theme-btn__preview preview--glass-dark" aria-hidden="true"></div>
             Glass Dark
           </button>
-
           <button class="theme-btn" data-theme="glass-light" type="button" aria-pressed="false">
             <div class="theme-btn__preview preview--glass-light" aria-hidden="true"></div>
             Glass Light
           </button>
+        </div>
 
+        <!-- Accent color combos -->
+        <p class="settings__sublabel">MZN Accent Color</p>
+        <div class="combo-switcher" role="group" aria-label="Choose MZN accent color">
+          <button class="combo-btn" data-combo="blue" type="button" aria-pressed="true">
+            <span class="combo-swatch" style="background:#58a6ff"></span>
+            Blue
+          </button>
+          <button class="combo-btn" data-combo="violet" type="button" aria-pressed="false">
+            <span class="combo-swatch" style="background:#c084fc"></span>
+            Violet
+          </button>
+          <button class="combo-btn" data-combo="teal" type="button" aria-pressed="false">
+            <span class="combo-swatch" style="background:#34d399"></span>
+            Teal
+          </button>
         </div>
       </div>
 
-      <!-- Rate -->
       <div class="card">
         <form id="rate-form" class="form">
           <label class="field">
@@ -161,9 +178,7 @@
           </label>
           <button type="submit" class="btn btn--secondary">Save Rate</button>
         </form>
-
         <button class="btn btn--danger" id="reset-all" type="button">Reset All Data</button>
-
         <button class="btn btn--install" id="install-btn" type="button" hidden>
           <span class="icon icon-download" aria-hidden="true"></span>Install App
         </button>
@@ -172,11 +187,9 @@
     </section>
 
   </main>
-
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
 <script src="app.js"></script>
 </body>
 </html>

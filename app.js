@@ -5,85 +5,99 @@
    ============================================================ */
 
 const STORAGE_KEYS = {
-  trades: "tpd_trades",
+  trades:   "tpd_trades",
   settings: "tpd_settings",
 };
 
 const DEFAULT_SETTINGS = {
   usdToMznRate: 63,
-  theme: "dark",
+  theme:        "dark",
+  combo:        "blue",
+  addCollapsed: false,
 };
 
 function uid() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
-  return "id_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+  return window.crypto?.randomUUID?.() ??
+    "id_" + Date.now() + "_" + Math.random().toString(16).slice(2);
 }
 
 function loadSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.settings);
-    if (!raw) return { ...DEFAULT_SETTINGS };
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  } catch { return { ...DEFAULT_SETTINGS }; }
 }
 
-function saveSettings(settings) {
-  localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
+function saveSettings(s) {
+  localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(s));
 }
 
 function loadTrades() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.trades);
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-function saveTrades(trades) {
-  localStorage.setItem(STORAGE_KEYS.trades, JSON.stringify(trades));
+function saveTrades(t) {
+  localStorage.setItem(STORAGE_KEYS.trades, JSON.stringify(t));
 }
 
 /* ============================================================
-   Theme
+   Theme & Accent
    ============================================================ */
 
 const THEME_META = {
-  dark:        { color: "#0d1117" },
-  light:       { color: "#f6f8fa" },
+  dark:         { color: "#0d1117" },
+  light:        { color: "#f6f8fa" },
   "glass-dark":  { color: "#060b14" },
   "glass-light": { color: "#dde8f5" },
 };
 
 function applyTheme(theme) {
-  const validThemes = Object.keys(THEME_META);
-  if (!validThemes.includes(theme)) theme = "dark";
-
-  document.documentElement.dataset.theme = theme === "dark" ? "" : theme;
+  if (!THEME_META[theme]) theme = "dark";
+  const html = document.documentElement;
   if (theme === "dark") {
-    delete document.documentElement.dataset.theme;
+    delete html.dataset.theme;
+  } else {
+    html.dataset.theme = theme;
   }
+  const meta = document.getElementById("meta-theme-color");
+  if (meta) meta.content = THEME_META[theme].color;
 
-  const metaColor = document.getElementById("meta-theme-color");
-  if (metaColor) metaColor.content = THEME_META[theme].color;
-
-  document.querySelectorAll(".theme-btn").forEach((btn) => {
+  document.querySelectorAll(".theme-btn").forEach(btn => {
     const active = btn.dataset.theme === theme;
     btn.classList.toggle("is-active", active);
     btn.setAttribute("aria-pressed", String(active));
   });
 }
 
+function applyCombo(combo) {
+  const valid = ["blue", "violet", "teal"];
+  if (!valid.includes(combo)) combo = "blue";
+  const html = document.documentElement;
+  if (combo === "blue") {
+    delete html.dataset.combo;
+  } else {
+    html.dataset.combo = combo;
+  }
+  document.querySelectorAll(".combo-btn").forEach(btn => {
+    const active = btn.dataset.combo === combo;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  });
+}
+
 function setTheme(theme) {
-  const settings = loadSettings();
-  settings.theme = theme;
-  saveSettings(settings);
+  const s = loadSettings(); s.theme = theme; saveSettings(s);
   applyTheme(theme);
   showToast("Theme applied");
+}
+
+function setCombo(combo) {
+  const s = loadSettings(); s.combo = combo; saveSettings(s);
+  applyCombo(combo);
+  showToast("Accent color applied");
 }
 
 /* ============================================================
@@ -92,27 +106,20 @@ function setTheme(theme) {
 
 function addTrade(amountUSD, note) {
   const trades = loadTrades();
-  trades.push({
-    id: uid(),
-    amountUSD: parseFloat(amountUSD),
-    note: (note || "").trim(),
-    timestamp: Date.now(),
-  });
+  trades.push({ id: uid(), amountUSD: parseFloat(amountUSD), note: (note||"").trim(), timestamp: Date.now() });
   saveTrades(trades);
 }
 
 function deleteTrade(id) {
-  const trades = loadTrades().filter((t) => t.id !== id);
-  saveTrades(trades);
+  saveTrades(loadTrades().filter(t => t.id !== id));
 }
 
 function getBalanceUSD() {
   return loadTrades().reduce((acc, t) => acc + t.amountUSD, 0);
 }
 
-function convertToMZN(amountUSD) {
-  const { usdToMznRate } = loadSettings();
-  return amountUSD * usdToMznRate;
+function convertToMZN(usd) {
+  return usd * loadSettings().usdToMznRate;
 }
 
 /* ============================================================
@@ -120,20 +127,27 @@ function convertToMZN(amountUSD) {
    ============================================================ */
 
 const usdFmt = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  signDisplay: "always",
+  style: "currency", currency: "USD", signDisplay: "always",
 });
 
 const mznFmt = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  minimumFractionDigits: 2, maximumFractionDigits: 2,
 });
 
 function signClass(n) {
-  if (n > 0) return "is-positive";
-  if (n < 0) return "is-negative";
-  return "is-zero";
+  return n > 0 ? "is-positive" : n < 0 ? "is-negative" : "is-zero";
+}
+
+function fmtDate(ts) {
+  return new Date(ts).toLocaleString(undefined, {
+    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
 }
 
 /* ============================================================
@@ -141,24 +155,53 @@ function signClass(n) {
    ============================================================ */
 
 function renderTicker() {
-  const settings = loadSettings();
   document.getElementById("ticker-rate-value").textContent =
-    settings.usdToMznRate.toFixed(2);
+    loadSettings().usdToMznRate.toFixed(2);
 }
 
 function renderBalance() {
-  const balanceUSD = getBalanceUSD();
-  const balanceMZN = convertToMZN(balanceUSD);
-  const trades = loadTrades();
+  const balUSD = getBalanceUSD();
+  const balMZN = convertToMZN(balUSD);
+  const trades  = loadTrades();
 
+  // Big dual display
   const usdEl = document.getElementById("balance-usd");
-  usdEl.textContent = usdFmt.format(balanceUSD);
-  usdEl.classList.remove("is-positive", "is-negative", "is-zero");
-  usdEl.classList.add(signClass(balanceUSD));
+  usdEl.textContent = usdFmt.format(balUSD);
+  usdEl.className = "balance__usd " + signClass(balUSD);
 
-  document.getElementById("balance-mzn").textContent = mznFmt.format(balanceMZN);
+  document.getElementById("balance-mzn").textContent =
+    mznFmt.format(balMZN) + " MZN";
+
   document.getElementById("trade-count").textContent =
     trades.length === 1 ? "1 trade" : `${trades.length} trades`;
+
+  // Last 2 trades mini section
+  renderRecentTrades(trades);
+}
+
+function renderRecentTrades(trades) {
+  const container = document.getElementById("recent-trades");
+  container.innerHTML = "";
+
+  const last2 = trades.slice(-2).reverse(); // most recent first
+  if (last2.length === 0) return;
+
+  for (const t of last2) {
+    const mzn = convertToMZN(t.amountUSD);
+    const el = document.createElement("div");
+    el.className = "recent-trade";
+    el.innerHTML = `
+      <div class="recent-trade__label">
+        <span class="recent-trade__note">${escapeHtml(t.note) || "&mdash;"}</span>
+        <span class="recent-trade__time">${fmtDate(t.timestamp)}</span>
+      </div>
+      <div class="recent-trade__amounts">
+        <span class="recent-trade__usd ${signClass(t.amountUSD)}">${usdFmt.format(t.amountUSD)}</span>
+        <span class="recent-trade__mzn">${mznFmt.format(mzn)} MZN</span>
+      </div>
+    `;
+    container.appendChild(el);
+  }
 }
 
 function renderHistory() {
@@ -175,34 +218,26 @@ function renderHistory() {
   }
 
   for (const t of trades) {
+    const mzn = convertToMZN(t.amountUSD);
     const row = document.createElement("div");
     row.className = "trade";
-
-    const mzn = convertToMZN(t.amountUSD);
-    const dateStr = new Date(t.timestamp).toLocaleString(undefined, {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
     row.innerHTML = `
       <div class="trade__row">
         <div class="trade__main">
           <p class="trade__note">${escapeHtml(t.note) || "&mdash;"}</p>
-          <span class="trade__time">${dateStr}</span>
+          <span class="trade__time">${fmtDate(t.timestamp)}</span>
         </div>
         <div class="trade__amounts">
-          <div class="trade__usd ${signClass(t.amountUSD)}">${usdFmt.format(t.amountUSD)}</div>
-          <div class="trade__mzn">${mznFmt.format(mzn)} MZN</div>
+          <span class="trade__usd ${signClass(t.amountUSD)}">${usdFmt.format(t.amountUSD)}</span>
+          <span class="trade__mzn">${mznFmt.format(mzn)} MZN</span>
         </div>
-        <button class="trade__delete" data-id="${t.id}" title="Delete trade" aria-label="Delete trade">&times;</button>
+        <button class="trade__delete" data-id="${t.id}" title="Delete" aria-label="Delete trade">&times;</button>
       </div>
     `;
     container.appendChild(row);
   }
 
-  container.querySelectorAll(".trade__delete").forEach((btn) => {
+  container.querySelectorAll(".trade__delete").forEach(btn => {
     btn.addEventListener("click", () => {
       deleteTrade(btn.dataset.id);
       renderAll();
@@ -211,17 +246,41 @@ function renderHistory() {
   });
 }
 
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 function renderAll() {
   renderTicker();
   renderBalance();
   renderHistory();
 }
+
+/* ============================================================
+   Add Trade — collapsible
+   ============================================================ */
+
+const addCard       = document.getElementById("add-card");
+const addBody       = document.getElementById("add-body");
+const addToggle     = document.getElementById("add-toggle");
+const addCompactBtn = document.getElementById("add-compact-btn");
+
+function setAddCollapsed(collapsed, save = true) {
+  addCard.classList.toggle("is-collapsed", collapsed);
+  addToggle.setAttribute("aria-expanded", String(!collapsed));
+  addCompactBtn.hidden = !collapsed;
+
+  if (save) {
+    const s = loadSettings();
+    s.addCollapsed = collapsed;
+    saveSettings(s);
+  }
+}
+
+addToggle.addEventListener("click", () => {
+  setAddCollapsed(!addCard.classList.contains("is-collapsed"));
+});
+
+addCompactBtn.addEventListener("click", () => {
+  setAddCollapsed(false);
+  setTimeout(() => document.getElementById("trade-amount").focus(), 200);
+});
 
 /* ============================================================
    Toast
@@ -240,33 +299,25 @@ function showToast(message) {
    Event wiring
    ============================================================ */
 
-document.getElementById("trade-form").addEventListener("submit", (e) => {
+document.getElementById("trade-form").addEventListener("submit", e => {
   e.preventDefault();
-  const amountInput = document.getElementById("trade-amount");
-  const noteInput = document.getElementById("trade-note");
-
-  const amount = amountInput.value;
+  const amtEl  = document.getElementById("trade-amount");
+  const noteEl = document.getElementById("trade-note");
+  const amount = amtEl.value;
   if (amount === "" || isNaN(parseFloat(amount))) return;
 
-  addTrade(amount, noteInput.value);
-  amountInput.value = "";
-  noteInput.value = "";
-  amountInput.focus();
-
+  addTrade(amount, noteEl.value);
+  amtEl.value = ""; noteEl.value = "";
+  amtEl.focus();
   renderAll();
   showToast("Trade added");
 });
 
-document.getElementById("rate-form").addEventListener("submit", (e) => {
+document.getElementById("rate-form").addEventListener("submit", e => {
   e.preventDefault();
-  const rateInput = document.getElementById("rate-input");
-  const rate = parseFloat(rateInput.value);
+  const rate = parseFloat(document.getElementById("rate-input").value);
   if (isNaN(rate) || rate <= 0) return;
-
-  const settings = loadSettings();
-  settings.usdToMznRate = rate;
-  saveSettings(settings);
-
+  const s = loadSettings(); s.usdToMznRate = rate; saveSettings(s);
   renderAll();
   showToast("Rate saved");
 });
@@ -286,13 +337,18 @@ document.getElementById("reset-all").addEventListener("click", () => {
   renderAll();
   document.getElementById("rate-input").value = loadSettings().usdToMznRate;
   applyTheme("dark");
+  applyCombo("blue");
+  setAddCollapsed(false, false);
   showToast("All data reset");
 });
 
-/* Theme buttons */
-document.querySelectorAll(".theme-btn").forEach((btn) => {
-  btn.addEventListener("click", () => setTheme(btn.dataset.theme));
-});
+// Theme & combo buttons
+document.querySelectorAll(".theme-btn").forEach(btn =>
+  btn.addEventListener("click", () => setTheme(btn.dataset.theme))
+);
+document.querySelectorAll(".combo-btn").forEach(btn =>
+  btn.addEventListener("click", () => setCombo(btn.dataset.combo))
+);
 
 /* ============================================================
    View routing
@@ -301,11 +357,14 @@ document.querySelectorAll(".theme-btn").forEach((btn) => {
 const VALID_VIEWS = ["balance", "history", "settings"];
 
 function applyView(view) {
-  document.querySelectorAll(".view").forEach((el) => {
-    el.classList.toggle("view--active", el.dataset.view === view);
-  });
+  document.querySelectorAll(".view").forEach(el =>
+    el.classList.toggle("view--active", el.dataset.view === view)
+  );
 
-  document.getElementById("navtiles").hidden = view !== "balance";
+  const subheader = document.getElementById("subheader");
+  const isBalance = view === "balance";
+  subheader.hidden = isBalance;
+
   document.getElementById("backbar-history").hidden = view !== "history";
   document.getElementById("backbar-settings").hidden = view !== "settings";
 
@@ -315,17 +374,13 @@ function applyView(view) {
 function showView(view, { replace = false } = {}) {
   if (!VALID_VIEWS.includes(view)) view = "balance";
   const hash = "#/" + view;
-
   if (replace) {
     history.replaceState(null, "", hash);
     applyView(view);
     return;
   }
-  if (location.hash !== hash) {
-    location.hash = hash;
-  } else {
-    applyView(view);
-  }
+  if (location.hash !== hash) location.hash = hash;
+  else applyView(view);
 }
 
 function currentViewFromHash() {
@@ -335,9 +390,9 @@ function currentViewFromHash() {
 
 window.addEventListener("hashchange", () => applyView(currentViewFromHash()));
 
-document.querySelectorAll(".navtile, .backbtn").forEach((btn) => {
-  btn.addEventListener("click", () => showView(btn.dataset.goto));
-});
+document.querySelectorAll(".navtile, .backbtn").forEach(btn =>
+  btn.addEventListener("click", () => showView(btn.dataset.goto))
+);
 
 document.getElementById("ticker-rate").addEventListener("click", () => {
   showView("settings");
@@ -345,13 +400,13 @@ document.getElementById("ticker-rate").addEventListener("click", () => {
 });
 
 /* ============================================================
-   PWA install prompt
+   PWA install
    ============================================================ */
 
 let deferredInstallEvent = null;
 const installBtn = document.getElementById("install-btn");
 
-window.addEventListener("beforeinstallprompt", (e) => {
+window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
   deferredInstallEvent = e;
   installBtn.hidden = false;
@@ -375,17 +430,19 @@ window.addEventListener("appinstalled", () => {
    ============================================================ */
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch(() => {});
-  });
+  window.addEventListener("load", () =>
+    navigator.serviceWorker.register("service-worker.js").catch(() => {})
+  );
 }
 
 /* ============================================================
    Init
    ============================================================ */
 
-const _initSettings = loadSettings();
-document.getElementById("rate-input").value = _initSettings.usdToMznRate;
-applyTheme(_initSettings.theme || "dark");
+const _s = loadSettings();
+document.getElementById("rate-input").value = _s.usdToMznRate;
+applyTheme(_s.theme  || "dark");
+applyCombo(_s.combo  || "blue");
+setAddCollapsed(_s.addCollapsed ?? false, false);
 renderAll();
 showView(currentViewFromHash(), { replace: true });
