@@ -106,14 +106,99 @@ body {
   color: var(--blue);
 }
 
+/* ---------- Sub-header: nav tiles (home) / back bar (sub-pages) ---------- */
+
+.subheader {
+  padding: 12px 16px 0;
+}
+
+.navtiles {
+  display: flex;
+  gap: 10px;
+}
+
+.navtile {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 12px 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.navtile:active { transform: scale(0.97); }
+
+.navtile__icon {
+  width: 20px;
+  height: 20px;
+  background-color: var(--blue);
+}
+
+.backbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.backbtn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-muted);
+  border-radius: 999px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+}
+.backbtn:active { transform: scale(0.95); }
+.backbtn .icon { width: 16px; height: 16px; }
+
+.backbar__title {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.backbar__title .icon { width: 14px; height: 14px; color: var(--text-muted); background-color: var(--text-muted); }
+
+.backbar__spacer { width: 34px; flex-shrink: 0; }
+
 /* ---------- Layout ---------- */
 
 main {
   flex: 1;
   padding: 16px;
-  display: flex;
+}
+
+.view {
+  display: none;
   flex-direction: column;
   gap: 16px;
+}
+
+.view--active {
+  display: flex;
+  animation: viewIn 0.18s ease;
+}
+
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }
 
 .card {
@@ -414,6 +499,12 @@ input:focus {
   -webkit-mask-image: var(--svg);
 }
 
+.icon-back {
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E");
+  mask-image: var(--svg);
+  -webkit-mask-image: var(--svg);
+}
+
 .icon-download {
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12'/%3E%3Cpath d='M7 11l5 5 5-5'/%3E%3Cpath d='M5 21h14'/%3E%3C/svg%3E");
   mask-image: var(--svg);
@@ -423,7 +514,7 @@ input:focus {
 /* ---------- Reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
 }
 
 /* ---------- Focus visibility ---------- */

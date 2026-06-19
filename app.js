@@ -249,9 +249,54 @@ document.getElementById("reset-all").addEventListener("click", () => {
   showToast("All data reset");
 });
 
+/* ============================================================
+   View routing (Balance / History / Settings as separate pages)
+   ============================================================ */
+
+const VALID_VIEWS = ["balance", "history", "settings"];
+
+function applyView(view) {
+  document.querySelectorAll(".view").forEach((el) => {
+    el.classList.toggle("view--active", el.dataset.view === view);
+  });
+
+  document.getElementById("navtiles").hidden = view !== "balance";
+  document.getElementById("backbar-history").hidden = view !== "history";
+  document.getElementById("backbar-settings").hidden = view !== "settings";
+
+  window.scrollTo(0, 0);
+}
+
+function showView(view, { replace = false } = {}) {
+  if (!VALID_VIEWS.includes(view)) view = "balance";
+  const hash = "#/" + view;
+
+  if (replace) {
+    history.replaceState(null, "", hash);
+    applyView(view);
+    return;
+  }
+  if (location.hash !== hash) {
+    location.hash = hash; // triggers hashchange -> applyView
+  } else {
+    applyView(view);
+  }
+}
+
+function currentViewFromHash() {
+  const v = location.hash.replace("#/", "");
+  return VALID_VIEWS.includes(v) ? v : "balance";
+}
+
+window.addEventListener("hashchange", () => applyView(currentViewFromHash()));
+
+document.querySelectorAll(".navtile, .backbtn").forEach((btn) => {
+  btn.addEventListener("click", () => showView(btn.dataset.goto));
+});
+
 document.getElementById("ticker-rate").addEventListener("click", () => {
-  document.getElementById("settings-heading").scrollIntoView({ behavior: "smooth", block: "center" });
-  document.getElementById("rate-input").focus();
+  showView("settings");
+  setTimeout(() => document.getElementById("rate-input").focus(), 200);
 });
 
 /* ============================================================
@@ -298,3 +343,4 @@ if ("serviceWorker" in navigator) {
 
 document.getElementById("rate-input").value = loadSettings().usdToMznRate;
 renderAll();
+showView(currentViewFromHash(), { replace: true });
